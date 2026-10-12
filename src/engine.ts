@@ -385,6 +385,20 @@ export class Game {
       !s ||
       !Array.isArray(s.terrain?.cells) ||
       s.terrain.cells.length !== 129600 ||
+      !Number.isInteger(s.terrain.revision) ||
+      s.terrain.revision < 0 ||
+      s.terrain.revision > 10000 ||
+      (s.blastVisual &&
+        (![
+          s.blastVisual.x,
+          s.blastVisual.y,
+          s.blastVisual.r,
+          s.blastVisual.life,
+        ].every(Number.isFinite) ||
+          s.blastVisual.r < 0 ||
+          s.blastVisual.r > 100 ||
+          s.blastVisual.life < 0 ||
+          s.blastVisual.life > 1)) ||
       s.terrain.cells.some((v: unknown) => v !== 0 && v !== 1) ||
       !Array.isArray(s.units) ||
       s.units.length !== 6 ||
@@ -405,6 +419,10 @@ export class Game {
       ![s.seed, s.turn, s.timer, s.wind, s.water, s.active].every(
         Number.isFinite,
       ) ||
+      typeof s.notice !== "string" ||
+      s.notice.length > 180 ||
+      /[<>]/.test(s.notice) ||
+      ![null, 0, 1].includes(s.winner) ||
       ![0, 1].includes(s.team) ||
       ![0, 1, 2].includes(s.map) ||
       Math.abs(s.wind) > 22 ||
@@ -468,7 +486,9 @@ export class Game {
     const g = new Game(s.seed, s.map, s.mode);
     for (const key of Object.keys(g))
       if (key in s) (g as unknown as Record<string, unknown>)[key] = s[key];
-    g.terrain = Object.assign(new Terrain(1, 0), s.terrain);
+    g.terrain = new Terrain(1, 0);
+    g.terrain.cells = s.terrain.cells;
+    g.terrain.revision = s.terrain.revision;
     return g;
   }
 }

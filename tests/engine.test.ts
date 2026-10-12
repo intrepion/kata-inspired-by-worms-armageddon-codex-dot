@@ -200,3 +200,11 @@ test("inaccessible opposing survivors terminate at the tide", () => {
   assert.equal(g.phase, "over");
   assert.ok(g.turn <= 51);
 });
+test("save terrain metadata cannot override collision methods", () => {
+  const d = JSON.parse(new Game().save());
+  d.state.terrain.solid = null;
+  const g = Game.load(JSON.stringify(d));
+  assert.doesNotThrow(() => g.step());
+  d.state.blastVisual = { x: 0, y: 0, r: -1, life: 1 };
+  assert.throws(() => Game.load(JSON.stringify(d)));
+});
