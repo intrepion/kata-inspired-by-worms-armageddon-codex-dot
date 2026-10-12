@@ -1,0 +1,18 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {Terrain} from '../src/engine.ts';
+test('carving creates a collision hole below the surface',()=>{const t=new Terrain(1,0);assert.equal(t.solid(400,440),true);t.carve(400,440,32);assert.equal(t.solid(400,440),false);assert.equal(t.solid(450,440),true);});
+import {Game,projectileStep,DT,type Projectile} from '../src/engine.ts';
+const shot=():Projectile=>({x:400,y:50,vx:120,vy:-20,age:0,weapon:'pod'});
+test('fixed steps are deterministic and wind changes flight',()=>{const t=new Terrain(1,0),a=shot(),b=shot(),c=shot();for(let i=0;i<60;i++){projectileStep(a,t,20);projectileStep(b,t,20);projectileStep(c,t,-20);}assert.deepEqual(a,b);assert.ok(a.x>c.x+19);assert.ok(a.y>50);});
+test('swept impact cannot cross thin turf',()=>{const t=new Terrain(1,0);t.cells.fill(0);for(let y=0;y<270;y++)t.cells[y*480+250]=1;const p=shot();p.vx=12000;assert.equal(projectileStep(p,t,0),true);assert.ok(p.x<=503);});
+test('grenade bounces and fuse is bounded',()=>{const t=new Terrain(1,0),p=shot();p.weapon='bomb';p.y=t.surface(400)-3;p.vy=100;assert.equal(projectileStep(p,t,0),false);assert.ok(p.vy<0);let end=false;for(let i=0;i<150&&!end;i++)end=projectileStep(p,t,0);assert.equal(end,true);assert.ok(p.age<2.6);});
+test('blast carves turf, falls off, and knocks creatures away',()=>{const g=new Game();g.units[0].x=400;g.units[0].y=350;g.units[1].x=440;g.units[1].y=350;g.units[2].x=600;g.explode(400,350,'bomb');assert.ok(g.units[0].hp<g.units[1].hp);assert.equal(g.units[2].hp,100);assert.ok(g.units[0].vy<0);assert.ok(g.units[1].vx>0);assert.equal(g.terrain.solid(400,400),false);});
+test('one volley consumes ammo once; pause prevents all simulation',()=>{const g=new Game();g.weapon='bomb';assert.ok(g.fire());assert.equal(g.fire(),false);assert.equal(g.captain.bombs,2);g.paused=true;const before=g.save();for(let i=0;i<120;i++)g.step();assert.equal(g.save(),before);});
+test('empty bomb inventory is illegal; glove ends the turn',()=>{const g=new Game();g.weapon='bomb';g.captain.bombs=0;assert.equal(g.fire(),false);g.weapon='glove';assert.equal(g.fire(),true);assert.equal(g.phase,'settle');});
+test('water kills and simultaneous elimination draws',()=>{const g=new Game();g.units.forEach(u=>u.y=510);g.step();assert.equal(g.phase,'over');assert.equal(g.winner,null);});
+test('active death rotates to a live captain; timer eventually rotates',()=>{const g=new Game();g.captain.hp=0;for(let i=0;i<400;i++)g.step();assert.ok(g.captain.hp>0);assert.ok(g.turn>=2);const h=new Game(42,0,'hotseat');for(let i=0;i<1900;i++)h.step();assert.equal(h.team,1);});
+test('spawn placement is dry and on turf on every map',()=>{for(let map=0;map<3;map++){const g=new Game(42,map);for(const u of g.units){assert.ok(u.y+7<g.water);assert.equal(g.terrain.solid(u.x,u.y),false);assert.equal(g.terrain.solid(u.x,u.y+10),true);}}});
+test('carved ground makes a creature fall and settle',()=>{const g=new Game();const u=g.captain,y=u.y;g.terrain.carve(u.x,u.y+25,35);for(let i=0;i<120;i++)g.step();assert.ok(u.y>y+10);assert.ok(u.grounded);});
+test('reload faithfully continues in-flight volley; corrupt save rejected',()=>{const a=new Game();a.fire();for(let i=0;i<25;i++)a.step();const b=Game.load(a.save());for(let i=0;i<100;i++){a.step();b.step();}assert.equal(a.save(),b.save());assert.throws(()=>Game.load('{}'));});
+test('AI legal finite complete matches across maps, including trapped survivors',()=>{for(let map=0;map<3;map++){const g=new Game(42,map,'hotseat');let ticks=0;while(g.phase!=='over'&&ticks<100000){if(g.phase==='aim'){Object.assign(g,g.plan());assert.equal(g.fire(),true);}g.step();ticks++;}assert.equal(g.phase,'over');assert.ok(g.turn<=51);}});
