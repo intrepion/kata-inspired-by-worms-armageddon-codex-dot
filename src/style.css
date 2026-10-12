@@ -1,1 +1,407 @@
-:root{font-family:Inter,ui-sans-serif,system-ui,sans-serif;color:#183b40;background:#f6f2e8;font-synthesis:none}*{box-sizing:border-box}body{margin:0}button,input,select{font:inherit}button{cursor:pointer;border:1px solid #b9c6bc;background:#fffaf0;color:#183b40;border-radius:9px;padding:10px 15px;font-weight:650}button:hover{background:#e4edda}button:focus-visible,input:focus-visible,select:focus-visible,canvas:focus-visible{outline:3px solid #cf633f;outline-offset:3px}button:disabled{opacity:.42;cursor:default}header{display:flex;align-items:center;gap:24px;border-bottom:1px solid #d7dcd0;padding:20px max(24px,calc((100vw - 1160px)/2));font-size:13px}header button{margin-left:auto;font-size:12px}.brand{color:inherit;text-decoration:none;font-weight:900;letter-spacing:2px}main{max-width:1160px;margin:auto;padding:0 24px}.intro{display:flex;justify-content:space-between;align-items:flex-end;padding:38px 0 30px}.eyebrow{font-size:10px;letter-spacing:2.6px;font-weight:850;color:#6e8071}h1{font-size:clamp(34px,4vw,52px);letter-spacing:-2px;line-height:1.06;margin:13px 0 0}h1 em{font-family:Georgia,serif;font-weight:normal;color:#b45335}.intro p{font-size:14px;line-height:1.8;color:#6d7c73}.arena{border:1px solid #b6c2b7;border-radius:16px;overflow:hidden;box-shadow:0 15px 50px #213b3010;background:#fffaf0}.score{display:flex;justify-content:space-between;padding:18px 24px;background:#102e36;color:#f7efd9}.score>div{display:flex;flex-direction:column;gap:5px}.score b{font-size:12px;letter-spacing:1.7px}.score span{font-size:11px;color:#b8d0c8}.score>div:first-child b{color:#f5a180}.score>div:last-child{text-align:right}.score>div:last-child b{color:#79d2c0}.turn{text-align:center}.world{position:relative;background:#163b43}canvas{display:block;width:100%;aspect-ratio:16/9}.map-tag{position:absolute;top:18px;left:20px;color:#f7efd9;letter-spacing:2px;font-size:9px;background:#102e3677;padding:7px 10px;border-radius:4px;pointer-events:none}.status{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid #d7dcd0;font-size:12px}.status button{padding:5px 12px;font-size:11px}.controls{padding:18px;display:grid;grid-template-columns:1.4fr 1fr .9fr;gap:18px}.weapons{display:flex;gap:6px}.weapons button{flex:1;text-align:left;padding:12px 9px}.weapons b{font-size:11px;display:block;white-space:nowrap}.weapons small{font-size:9px;display:block;margin-top:6px;color:#6e8071}.weapons .selected{background:#e2ebd5;border-color:#607e56;box-shadow:inset 0 0 0 1px #607e56}.aim{display:flex;flex-direction:column;gap:10px}.aim label{font-size:11px;font-weight:700}.aim output{float:right}input[type=range]{width:100%;accent-color:#b45335;display:block}.actions{display:flex;gap:8px;flex-direction:column}.actions>div{display:flex;gap:5px}.actions>div button{padding:7px;flex:1;font-size:11px}.fire{background:#bc5737;color:#fffaf0;border-color:#bc5737}.fire:hover{background:#a2472c}.fire small{font-size:9px;opacity:.7;margin-left:15px}.bottom{padding:24px 0}.setup{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.setup label{font-size:10px;text-transform:uppercase;font-weight:800;letter-spacing:1px}.setup select{display:block;padding:11px;border:1px solid #b9c6bc;border-radius:8px;background:#fffaf0;margin-top:8px;color:#183b40;font-size:12px;min-width:210px}.setup button{font-size:12px}details{margin-top:24px;border-top:1px solid #d7dcd0;padding-top:20px}summary{font-family:Georgia,serif;font-size:21px;cursor:pointer}details p{color:#66786d;font-size:12px;line-height:1.9;max-width:900px}footer{display:flex;justify-content:space-between;padding:20px 0 28px;color:#7c8b80;font-size:10px;border-top:1px solid #d7dcd0}footer span{letter-spacing:2px}.overlay{position:absolute;inset:0;background:#102e36e8;color:#fff0d6;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}.overlay[hidden]{display:none}.overlay h2{font-family:Georgia,serif;font-size:36px;margin:15px}.overlay p{font-size:13px}.overlay .eyebrow{color:#a5c5b5}.overlay button{background:#f2c888;margin:10px}@media(max-width:800px){.controls{grid-template-columns:1fr 1fr}.weapons{grid-column:1/-1}.intro p{display:none}header>span{display:none}.score{padding:14px 12px}.score b{font-size:10px;letter-spacing:.5px}.score span{font-size:9px}}@media(max-width:480px){main{padding:0 12px}header{padding:15px 12px;gap:5px}.brand{font-size:11px;letter-spacing:1px}.intro{padding:25px 0}h1{font-size:36px}.controls{padding:12px;gap:12px}.score{padding:12px 8px}.score span{max-width:110px}.overlay h2{font-size:23px;margin:8px}.overlay p{font-size:10px}.map-tag{top:8px;left:8px;font-size:7px}.setup label{width:100%}.setup select{width:100%}footer span{display:none}.status{padding:8px 12px}.status span{max-width:230px}details p{font-size:12px}}
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  color: #183b40;
+  background: #f6f2e8;
+  font-synthesis: none;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+  border: 1px solid #b9c6bc;
+  background: #fffaf0;
+  color: #183b40;
+  border-radius: 9px;
+  padding: 10px 15px;
+  font-weight: 650;
+}
+button:hover {
+  background: #e4edda;
+}
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+canvas:focus-visible {
+  outline: 3px solid #cf633f;
+  outline-offset: 3px;
+}
+button:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  border-bottom: 1px solid #d7dcd0;
+  padding: 20px max(24px, calc((100vw - 1160px) / 2));
+  font-size: 13px;
+}
+header button {
+  margin-left: auto;
+  font-size: 12px;
+}
+.brand {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+main {
+  max-width: 1160px;
+  margin: auto;
+  padding: 0 24px;
+}
+.intro {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 38px 0 30px;
+}
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 2.6px;
+  font-weight: 850;
+  color: #6e8071;
+}
+h1 {
+  font-size: clamp(34px, 4vw, 52px);
+  letter-spacing: -2px;
+  line-height: 1.06;
+  margin: 13px 0 0;
+}
+h1 em {
+  font-family: Georgia, serif;
+  font-weight: normal;
+  color: #b45335;
+}
+.intro p {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #6d7c73;
+}
+.arena {
+  border: 1px solid #b6c2b7;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 15px 50px #213b3010;
+  background: #fffaf0;
+}
+.score {
+  display: flex;
+  justify-content: space-between;
+  padding: 18px 24px;
+  background: #102e36;
+  color: #f7efd9;
+}
+.score > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.score b {
+  font-size: 12px;
+  letter-spacing: 1.7px;
+}
+.score span {
+  font-size: 11px;
+  color: #b8d0c8;
+}
+.score > div:first-child b {
+  color: #f5a180;
+}
+.score > div:last-child {
+  text-align: right;
+}
+.score > div:last-child b {
+  color: #79d2c0;
+}
+.turn {
+  text-align: center;
+}
+.world {
+  position: relative;
+  background: #163b43;
+}
+canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16/9;
+}
+.map-tag {
+  position: absolute;
+  top: 18px;
+  left: 20px;
+  color: #f7efd9;
+  letter-spacing: 2px;
+  font-size: 9px;
+  background: #102e3677;
+  padding: 7px 10px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+.status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-bottom: 1px solid #d7dcd0;
+  font-size: 12px;
+}
+.status button {
+  padding: 5px 12px;
+  font-size: 11px;
+}
+.controls {
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 0.9fr;
+  gap: 18px;
+}
+.weapons {
+  display: flex;
+  gap: 6px;
+}
+.weapons button {
+  flex: 1;
+  text-align: left;
+  padding: 12px 9px;
+}
+.weapons b {
+  font-size: 11px;
+  display: block;
+  white-space: nowrap;
+}
+.weapons small {
+  font-size: 9px;
+  display: block;
+  margin-top: 6px;
+  color: #6e8071;
+}
+.weapons .selected {
+  background: #e2ebd5;
+  border-color: #607e56;
+  box-shadow: inset 0 0 0 1px #607e56;
+}
+.aim {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.aim label {
+  font-size: 11px;
+  font-weight: 700;
+}
+.aim output {
+  float: right;
+}
+input[type="range"] {
+  width: 100%;
+  accent-color: #b45335;
+  display: block;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-direction: column;
+}
+.actions > div {
+  display: flex;
+  gap: 5px;
+}
+.actions > div button {
+  padding: 7px;
+  flex: 1;
+  font-size: 11px;
+}
+.fire {
+  background: #bc5737;
+  color: #fffaf0;
+  border-color: #bc5737;
+}
+.fire:hover {
+  background: #a2472c;
+}
+.fire small {
+  font-size: 9px;
+  opacity: 0.7;
+  margin-left: 15px;
+}
+.bottom {
+  padding: 24px 0;
+}
+.setup {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+.setup label {
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+.setup select {
+  display: block;
+  padding: 11px;
+  border: 1px solid #b9c6bc;
+  border-radius: 8px;
+  background: #fffaf0;
+  margin-top: 8px;
+  color: #183b40;
+  font-size: 12px;
+  min-width: 210px;
+}
+.setup button {
+  font-size: 12px;
+}
+details {
+  margin-top: 24px;
+  border-top: 1px solid #d7dcd0;
+  padding-top: 20px;
+}
+summary {
+  font-family: Georgia, serif;
+  font-size: 21px;
+  cursor: pointer;
+}
+details p {
+  color: #66786d;
+  font-size: 12px;
+  line-height: 1.9;
+  max-width: 900px;
+}
+footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 0 28px;
+  color: #7c8b80;
+  font-size: 10px;
+  border-top: 1px solid #d7dcd0;
+}
+footer span {
+  letter-spacing: 2px;
+}
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: #102e36e8;
+  color: #fff0d6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+}
+.overlay[hidden] {
+  display: none;
+}
+.overlay h2 {
+  font-family: Georgia, serif;
+  font-size: 36px;
+  margin: 15px;
+}
+.overlay p {
+  font-size: 13px;
+}
+.overlay .eyebrow {
+  color: #a5c5b5;
+}
+.overlay button {
+  background: #f2c888;
+  margin: 10px;
+}
+@media (max-width: 800px) {
+  .controls {
+    grid-template-columns: 1fr 1fr;
+  }
+  .weapons {
+    grid-column: 1/-1;
+  }
+  .intro p {
+    display: none;
+  }
+  header > span {
+    display: none;
+  }
+  .score {
+    padding: 14px 12px;
+  }
+  .score b {
+    font-size: 10px;
+    letter-spacing: 0.5px;
+  }
+  .score span {
+    font-size: 9px;
+  }
+}
+@media (max-width: 480px) {
+  main {
+    padding: 0 12px;
+  }
+  header {
+    padding: 15px 12px;
+    gap: 5px;
+  }
+  .brand {
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+  .intro {
+    padding: 25px 0;
+  }
+  h1 {
+    font-size: 36px;
+  }
+  .controls {
+    padding: 12px;
+    gap: 12px;
+  }
+  .score {
+    padding: 12px 8px;
+  }
+  .score span {
+    max-width: 110px;
+  }
+  .overlay h2 {
+    font-size: 23px;
+    margin: 8px;
+  }
+  .overlay p {
+    font-size: 10px;
+  }
+  .map-tag {
+    top: 8px;
+    left: 8px;
+    font-size: 7px;
+  }
+  .setup label {
+    width: 100%;
+  }
+  .setup select {
+    width: 100%;
+  }
+  footer span {
+    display: none;
+  }
+  .status {
+    padding: 8px 12px;
+  }
+  .status span {
+    max-width: 230px;
+  }
+  details p {
+    font-size: 12px;
+  }
+}

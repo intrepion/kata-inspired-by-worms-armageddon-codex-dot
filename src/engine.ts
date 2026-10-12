@@ -1,33 +1,474 @@
-export const W=960,H=540,DT=1/60;
-export type Weapon='pod'|'bomb'|'glove';
-export type Mode='ai'|'hotseat'|'range';
+export const W = 960,
+  H = 540,
+  DT = 1 / 60;
+export type Weapon = "pod" | "bomb" | "glove";
+export type Mode = "ai" | "hotseat" | "range";
 export class Terrain {
- cells:number[]; revision=0;
- constructor(seed:number,map:number){this.cells=Array(480*270).fill(0);for(let x=0;x<480;x++){const top=map===1?330+65*Math.sin(x/42):map===2?355+45*Math.cos(x/25)+25*Math.sin(x/71):360+34*Math.sin(x/60+seed);for(let y=Math.floor(top/2);y<270;y++)this.cells[y*480+x]=1;}}
- solid(x:number,y:number){return x>=0&&x<W&&y>=0&&y<H&&this.cells[Math.floor(y/2)*480+Math.floor(x/2)]===1;}
- carve(x:number,y:number,r:number){for(let j=Math.max(0,Math.floor((y-r)/2));j<Math.min(270,(y+r)/2);j++)for(let i=Math.max(0,Math.floor((x-r)/2));i<Math.min(480,(x+r)/2);i++)if(Math.hypot(i*2-x,j*2-y)<r)this.cells[j*480+i]=0;this.revision++;}
- surface(x:number){for(let y=0;y<H;y+=2)if(this.solid(x,y))return y;return H;}
+  cells: number[];
+  revision = 0;
+  constructor(seed: number, map: number) {
+    this.cells = Array(480 * 270).fill(0);
+    for (let x = 0; x < 480; x++) {
+      const top =
+        map === 1
+          ? 330 + 65 * Math.sin(x / 42)
+          : map === 2
+            ? 355 + 45 * Math.cos(x / 25) + 25 * Math.sin(x / 71)
+            : 360 + 34 * Math.sin(x / 60 + seed);
+      for (let y = Math.floor(top / 2); y < 270; y++)
+        this.cells[y * 480 + x] = 1;
+    }
+  }
+  solid(x: number, y: number) {
+    return (
+      x >= 0 &&
+      x < W &&
+      y >= 0 &&
+      y < H &&
+      this.cells[Math.floor(y / 2) * 480 + Math.floor(x / 2)] === 1
+    );
+  }
+  carve(x: number, y: number, r: number) {
+    for (
+      let j = Math.max(0, Math.floor((y - r) / 2));
+      j < Math.min(270, (y + r) / 2);
+      j++
+    )
+      for (
+        let i = Math.max(0, Math.floor((x - r) / 2));
+        i < Math.min(480, (x + r) / 2);
+        i++
+      )
+        if (Math.hypot(i * 2 - x, j * 2 - y) < r) this.cells[j * 480 + i] = 0;
+    this.revision++;
+  }
+  surface(x: number) {
+    for (let y = 0; y < H; y += 2) if (this.solid(x, y)) return y;
+    return H;
+  }
 }
-export interface Creature {id:number;name:string;team:number;x:number;y:number;vx:number;vy:number;hp:number;bombs:number;grounded:boolean;}
-export interface Projectile {x:number;y:number;vx:number;vy:number;age:number;weapon:Weapon;}
-export const WEAPONS={pod:{label:'Seed Pod',radius:48,damage:58},bomb:{label:'Hop Bomb',radius:65,damage:72},glove:{label:'Garden Glove',radius:37,damage:45}};
-export function projectileStep(p:Projectile,t:Terrain,wind:number){p.age+=DT;p.vx+=wind*DT;p.vy+=210*DT;const count=Math.ceil(Math.hypot(p.vx,p.vy)*DT/1.5);for(let i=0;i<count;i++){const nx=p.x+p.vx*DT/count,ny=p.y+p.vy*DT/count;if(t.solid(nx,ny)){if(p.weapon==='bomb'){const wall=t.solid(nx,p.y);if(wall)p.vx*=-.62;else p.vy*=-.58;p.vx*=.86;return p.age>=2.4;}p.x=nx;p.y=ny;return true;}p.x=nx;p.y=ny;}return p.weapon==='bomb'?p.age>=2.4:p.age>7||p.y>H||p.x<0||p.x>W;}
+export interface Creature {
+  id: number;
+  name: string;
+  team: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  hp: number;
+  bombs: number;
+  grounded: boolean;
+}
+export interface Projectile {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  age: number;
+  weapon: Weapon;
+}
+export const WEAPONS = {
+  pod: { label: "Seed Pod", radius: 48, damage: 58 },
+  bomb: { label: "Hop Bomb", radius: 65, damage: 72 },
+  glove: { label: "Garden Glove", radius: 37, damage: 45 },
+};
+export function projectileStep(p: Projectile, t: Terrain, wind: number) {
+  p.age += DT;
+  p.vx += wind * DT;
+  p.vy += 210 * DT;
+  const count = Math.ceil((Math.hypot(p.vx, p.vy) * DT) / 1.5);
+  for (let i = 0; i < count; i++) {
+    const nx = p.x + (p.vx * DT) / count,
+      ny = p.y + (p.vy * DT) / count;
+    if (t.solid(nx, ny)) {
+      if (p.weapon === "bomb") {
+        const wall = t.solid(nx, p.y);
+        if (wall) p.vx *= -0.62;
+        else p.vy *= -0.58;
+        p.vx *= 0.86;
+        return p.age >= 2.4;
+      }
+      p.x = nx;
+      p.y = ny;
+      return true;
+    }
+    p.x = nx;
+    p.y = ny;
+  }
+  return p.weapon === "bomb"
+    ? p.age >= 2.4
+    : p.age > 7 || p.y > H || p.x < 0 || p.x > W;
+}
 export class Game {
- terrain:Terrain; units:Creature[]; seed:number; map:number; mode:Mode; team=0;active=0;turn=1;timer=30;wind=0;angle=45;power=65;direction=1;weapon:Weapon='pod';phase:'aim'|'flight'|'settle'|'over'='aim';paused=false;projectile:Projectile|null=null;settle=0;aiClock=0;water=502;winner:number|null=null;notice='Marmalade crew, make a little mess.';blastVisual:{x:number;y:number;r:number;life:number}|null=null; cursors=[0,0];
- constructor(seed=42,map=0,mode:Mode='ai'){this.seed=seed;this.map=map;this.mode=mode;this.terrain=new Terrain(seed,map);const names=['Pip','Crumpet','Miso','Sprout','Pickle','Noodle'];this.units=names.map((name,id)=>{const x=[100,210,310,650,760,865][id];return{id,name,team:id<3?0:1,x,y:this.terrain.surface(x)-10,vx:0,vy:0,hp:100,bombs:3,grounded:true};});this.wind=this.random()*44-22;}
- random(){this.seed=(Math.imul(this.seed,1664525)+1013904223)>>>0;return this.seed/4294967296;}
- get captain(){return this.units[this.active];}
- get human(){return this.mode!=='ai'||this.team===0;}
- move(dir:number){if(this.paused||this.phase!=='aim'||!this.human)return;this.direction=dir;this.captain.vx=dir*68;}
- jump(){if(this.paused||this.phase!=='aim'||!this.human||!this.captain.grounded)return;this.captain.vy=-145;this.captain.grounded=false;}
- fire(){if(this.paused||this.phase!=='aim'||this.captain.hp<=0)return false;const u=this.captain;if(this.weapon==='bomb'&&u.bombs===0)return false;if(this.weapon==='bomb'&&this.mode!=='range')u.bombs--;u.vx=0;this.phase='flight';if(this.weapon==='glove'){this.explode(u.x+this.direction*39,u.y-2,'glove');return true;}const a=this.angle*Math.PI/180,v=120+this.power*3.3;this.projectile={x:u.x+this.direction*15,y:u.y-13,vx:Math.cos(a)*v*this.direction,vy:-Math.sin(a)*v,age:0,weapon:this.weapon};return true;}
- explode(x:number,y:number,weapon:Weapon){const w=WEAPONS[weapon];this.terrain.carve(x,y,w.radius);this.blastVisual={x,y,r:w.radius,life:.65};for(const u of this.units){if(u.hp<=0)continue;const d=Math.hypot(u.x-x,u.y-y),f=Math.max(0,1-d/(w.radius+20));u.hp=Math.max(0,u.hp-Math.round(w.damage*f));if(f>0){u.vx+=(u.x>=x?1:-1)*f*190;u.vy-=f*205;u.grounded=false;}}this.projectile=null;this.phase='settle';this.settle=0;this.notice='Turf has left the chat.';}
- settleUnit(u:Creature){if(u.hp<=0)return;u.vy+=210*DT;const n=Math.max(1,Math.ceil(Math.hypot(u.vx,u.vy)*DT/2));u.grounded=false;for(let i=0;i<n;i++){const nx=u.x+u.vx*DT/n;if(!this.terrain.solid(nx+Math.sign(u.vx)*7,u.y)&&!this.terrain.solid(nx,u.y+6))u.x=nx;else if(Math.abs(u.vx)>0&&u.vy>=0&&!this.terrain.solid(nx,u.y-5)){u.x=nx;u.y-=2;}else u.vx=0;const ny=u.y+u.vy*DT/n;if(u.vy>=0&&this.terrain.solid(u.x,ny+9)){u.vy=0;u.grounded=true;}else if(u.vy<0&&this.terrain.solid(u.x,ny-9))u.vy=0;else u.y=ny;}
- if(u.grounded)u.vx*=.78;else u.vx*=.994;if(u.y+7>=this.water||u.x<7||u.x>W-7||u.y>H)u.hp=0;}
- result(){const alive=[0,1].map(t=>this.units.some(u=>u.team===t&&u.hp>0));if(this.mode==='range')return false;if(!alive[0]||!alive[1]||this.turn>50){this.phase='over';this.winner=alive[0]===alive[1]?null:alive[0]?0:1;this.notice=this.winner===null?'A draw! The garden wins.':`${this.winner===0?'Marmalade':'Nightshade'} wins the turf war!`;return true;}return false;}
- next(){if(this.result())return;this.turn++;if(this.turn>=12)this.water=Math.max(260,this.water-8);this.team=this.mode==='range'?0:1-this.team;const eligible=this.units.filter(u=>u.team===this.team&&u.hp>0);if(!eligible.length){this.result();return;}this.cursors[this.team]=(this.cursors[this.team]+1)%eligible.length;this.active=eligible[this.cursors[this.team]].id;this.direction=this.team===0?1:-1;this.timer=30;this.aiClock=0;this.phase='aim';this.wind=this.random()*44-22;this.notice=this.turn>=12?'Sudden tide: water rises every turn.':`${this.captain.name} is on garden duty.`;}
- step(){if(this.paused||this.phase==='over')return;if(this.blastVisual){this.blastVisual.life-=DT;if(this.blastVisual.life<=0)this.blastVisual=null;}for(const u of this.units)this.settleUnit(u);if(this.phase==='aim'){if(this.result())return;if(this.captain.hp<=0){this.phase='settle';this.settle=0;return;}this.timer-=DT;if(this.timer<=0){this.phase='settle';this.settle=0;}if(!this.human){this.aiClock+=DT;if(this.aiClock>.8){const a=this.plan();Object.assign(this,a);this.fire();}}}else if(this.phase==='flight'&&this.projectile){const p=this.projectile;if(projectileStep(p,this.terrain,this.wind))this.explode(p.x,p.y,p.weapon);}else if(this.phase==='settle'){this.settle+=DT;if(this.settle>.75&&this.units.every(u=>u.hp<=0||u.grounded&&Math.abs(u.vx)<2)||this.settle>5)this.next();}}
- plan(){const u=this.captain;let best={angle:45,power:65,direction:u.team===0?1:-1,weapon:'pod' as Weapon},score=-Infinity;for(const direction of [-1,1])for(const angle of [15,30,45,60,75])for(const power of [25,45,65,85,100]){const a=angle*Math.PI/180,v=120+power*3.3,p:Projectile={x:u.x+direction*15,y:u.y-13,vx:Math.cos(a)*v*direction,vy:-Math.sin(a)*v,age:0,weapon:'pod'};for(let i=0;i<421;i++)if(projectileStep(p,this.terrain,this.wind))break;let s=0;for(const target of this.units)if(target.hp>0){const f=Math.max(0,1-Math.hypot(target.x-p.x,target.y-p.y)/68);s+=f*(target.team===u.team?-100:80);}if(s>score){score=s;best={angle,power,direction,weapon:'pod'};}}return best;}
- save(){return JSON.stringify({version:1,state:this});}
- static load(raw:string){const data=JSON.parse(raw);const s=data.state;if(data.version!==1||!s||!Array.isArray(s.terrain?.cells)||s.terrain.cells.length!==129600||s.terrain.cells.some((v:unknown)=>v!==0&&v!==1)||!Array.isArray(s.units)||s.units.length!==6||s.units.some((u:Creature)=>![u.x,u.y,u.hp,u.vx,u.vy,u.bombs].every(Number.isFinite))||!['ai','hotseat','range'].includes(s.mode)||!['aim','flight','settle','over'].includes(s.phase)||![s.seed,s.turn,s.timer,s.wind,s.water,s.active].every(Number.isFinite)||s.active<0||s.active>5)throw Error('Invalid save');const g=new Game(s.seed,s.map,s.mode);Object.assign(g,s);g.terrain=Object.assign(new Terrain(1,0),s.terrain);return g;}
+  terrain: Terrain;
+  units: Creature[];
+  seed: number;
+  map: number;
+  mode: Mode;
+  team = 0;
+  active = 0;
+  turn = 1;
+  timer = 30;
+  wind = 0;
+  angle = 45;
+  power = 65;
+  direction = 1;
+  weapon: Weapon = "pod";
+  phase: "aim" | "flight" | "settle" | "over" = "aim";
+  paused = false;
+  projectile: Projectile | null = null;
+  settle = 0;
+  aiClock = 0;
+  water = 502;
+  winner: number | null = null;
+  notice = "Marmalade crew, make a little mess.";
+  blastVisual: { x: number; y: number; r: number; life: number } | null = null;
+  cursors = [0, 0];
+  constructor(seed = 42, map = 0, mode: Mode = "ai") {
+    this.seed = seed;
+    this.map = map;
+    this.mode = mode;
+    this.terrain = new Terrain(seed, map);
+    const names = ["Pip", "Crumpet", "Miso", "Sprout", "Pickle", "Noodle"];
+    this.units = names.map((name, id) => {
+      const x = [100, 210, 310, 650, 760, 865][id];
+      return {
+        id,
+        name,
+        team: id < 3 ? 0 : 1,
+        x,
+        y: this.terrain.surface(x) - 10,
+        vx: 0,
+        vy: 0,
+        hp: 100,
+        bombs: 3,
+        grounded: true,
+      };
+    });
+    this.wind = this.random() * 44 - 22;
+  }
+  random() {
+    this.seed = (Math.imul(this.seed, 1664525) + 1013904223) >>> 0;
+    return this.seed / 4294967296;
+  }
+  get captain() {
+    return this.units[this.active];
+  }
+  configure(values: Partial<Pick<Game, "angle" | "power" | "weapon">>) {
+    if (this.paused || this.phase !== "aim" || !this.human) return;
+    if (values.angle !== undefined)
+      this.angle = Math.max(5, Math.min(85, values.angle));
+    if (values.power !== undefined)
+      this.power = Math.max(10, Math.min(100, values.power));
+    if (values.weapon !== undefined) this.weapon = values.weapon;
+  }
+  get human() {
+    return this.mode !== "ai" || this.team === 0;
+  }
+  move(dir: number) {
+    if (this.paused || this.phase !== "aim" || !this.human) return;
+    this.direction = dir;
+    this.captain.vx = dir * 68;
+  }
+  jump() {
+    if (
+      this.paused ||
+      this.phase !== "aim" ||
+      !this.human ||
+      !this.captain.grounded
+    )
+      return;
+    this.captain.vy = -145;
+    this.captain.grounded = false;
+  }
+  fire() {
+    if (this.paused || this.phase !== "aim" || this.captain.hp <= 0)
+      return false;
+    const u = this.captain;
+    if (this.weapon === "bomb" && u.bombs === 0) return false;
+    if (this.weapon === "bomb" && this.mode !== "range") u.bombs--;
+    u.vx = 0;
+    this.phase = "flight";
+    if (this.weapon === "glove") {
+      this.explode(u.x + this.direction * 39, u.y - 2, "glove");
+      return true;
+    }
+    const a = (this.angle * Math.PI) / 180,
+      v = 120 + this.power * 3.3;
+    this.projectile = {
+      x: u.x + this.direction * 15,
+      y: u.y - 13,
+      vx: Math.cos(a) * v * this.direction,
+      vy: -Math.sin(a) * v,
+      age: 0,
+      weapon: this.weapon,
+    };
+    return true;
+  }
+  explode(x: number, y: number, weapon: Weapon) {
+    const w = WEAPONS[weapon];
+    this.terrain.carve(x, y, w.radius);
+    this.blastVisual = { x, y, r: w.radius, life: 0.65 };
+    for (const u of this.units) {
+      if (u.hp <= 0) continue;
+      const d = Math.hypot(u.x - x, u.y - y),
+        f = Math.max(0, 1 - d / (w.radius + 20));
+      u.hp = Math.max(0, u.hp - Math.round(w.damage * f));
+      if (f > 0) {
+        u.vx += (u.x >= x ? 1 : -1) * f * 190;
+        u.vy -= f * 205;
+        u.grounded = false;
+      }
+    }
+    this.projectile = null;
+    this.phase = "settle";
+    this.settle = 0;
+    this.notice = "Turf has left the chat.";
+  }
+  settleUnit(u: Creature) {
+    if (u.hp <= 0) return;
+    u.vy += 210 * DT;
+    const n = Math.max(1, Math.ceil((Math.hypot(u.vx, u.vy) * DT) / 2));
+    u.grounded = false;
+    for (let i = 0; i < n; i++) {
+      const nx = u.x + (u.vx * DT) / n;
+      if (
+        !this.terrain.solid(nx + Math.sign(u.vx) * 7, u.y) &&
+        !this.terrain.solid(nx, u.y + 6)
+      )
+        u.x = nx;
+      else if (
+        Math.abs(u.vx) > 0 &&
+        u.vy >= 0 &&
+        !this.terrain.solid(nx, u.y - 5)
+      ) {
+        u.x = nx;
+        u.y -= 2;
+      } else u.vx = 0;
+      const ny = u.y + (u.vy * DT) / n;
+      if (u.vy >= 0 && this.terrain.solid(u.x, ny + 9)) {
+        u.vy = 0;
+        u.grounded = true;
+      } else if (u.vy < 0 && this.terrain.solid(u.x, ny - 9)) u.vy = 0;
+      else u.y = ny;
+    }
+    if (u.grounded) u.vx *= 0.78;
+    else u.vx *= 0.994;
+    if (u.y + 7 >= this.water || u.x < 7 || u.x > W - 7 || u.y > H) u.hp = 0;
+  }
+  result() {
+    const alive = [0, 1].map((t) =>
+      this.units.some((u) => u.team === t && u.hp > 0),
+    );
+    if (this.mode === "range") return false;
+    if (!alive[0] || !alive[1] || this.turn > 50) {
+      this.phase = "over";
+      this.winner = alive[0] === alive[1] ? null : alive[0] ? 0 : 1;
+      this.notice =
+        this.winner === null
+          ? "A draw! The garden wins."
+          : `${this.winner === 0 ? "Marmalade" : "Nightshade"} wins the turf war!`;
+      return true;
+    }
+    return false;
+  }
+  next() {
+    if (this.result()) return;
+    this.turn++;
+    if (this.turn >= 12) this.water = Math.max(260, this.water - 8);
+    this.team = this.mode === "range" ? 0 : 1 - this.team;
+    const eligible = this.units.filter((u) => u.team === this.team && u.hp > 0);
+    if (!eligible.length) {
+      this.result();
+      return;
+    }
+    this.cursors[this.team] = (this.cursors[this.team] + 1) % eligible.length;
+    this.active = eligible[this.cursors[this.team]].id;
+    this.direction = this.team === 0 ? 1 : -1;
+    this.timer = 30;
+    this.aiClock = 0;
+    this.phase = "aim";
+    this.wind = this.random() * 44 - 22;
+    this.notice =
+      this.turn >= 12
+        ? "Sudden tide: water rises every turn."
+        : `${this.captain.name} is on garden duty.`;
+  }
+  step() {
+    if (this.paused || this.phase === "over") return;
+    if (this.blastVisual) {
+      this.blastVisual.life -= DT;
+      if (this.blastVisual.life <= 0) this.blastVisual = null;
+    }
+    for (const u of this.units) this.settleUnit(u);
+    if (this.phase === "aim") {
+      if (this.result()) return;
+      if (this.captain.hp <= 0) {
+        this.phase = "settle";
+        this.settle = 0;
+        return;
+      }
+      this.timer -= DT;
+      if (this.timer <= 0) {
+        this.phase = "settle";
+        this.settle = 0;
+      }
+      if (!this.human) {
+        this.aiClock += DT;
+        if (this.aiClock > 0.8) {
+          const a = this.plan();
+          Object.assign(this, a);
+          this.fire();
+        }
+      }
+    } else if (this.phase === "flight" && this.projectile) {
+      const p = this.projectile;
+      if (projectileStep(p, this.terrain, this.wind))
+        this.explode(p.x, p.y, p.weapon);
+    } else if (this.phase === "settle") {
+      this.settle += DT;
+      if (
+        this.settle > 0.75 &&
+        this.units.every((u) => u.hp <= 0 || (u.grounded && Math.abs(u.vx) < 2))
+      )
+        this.next();
+    }
+  }
+  plan() {
+    const u = this.captain;
+    let best = {
+        angle: 45,
+        power: 65,
+        direction: u.team === 0 ? 1 : -1,
+        weapon: "pod" as Weapon,
+      },
+      score = -Infinity;
+    for (const direction of [-1, 1])
+      for (const angle of [15, 30, 45, 60, 75])
+        for (const power of [25, 45, 65, 85, 100]) {
+          const a = (angle * Math.PI) / 180,
+            v = 120 + power * 3.3,
+            p: Projectile = {
+              x: u.x + direction * 15,
+              y: u.y - 13,
+              vx: Math.cos(a) * v * direction,
+              vy: -Math.sin(a) * v,
+              age: 0,
+              weapon: "pod",
+            };
+          for (let i = 0; i < 421; i++)
+            if (projectileStep(p, this.terrain, this.wind)) break;
+          let s = 0;
+          for (const target of this.units)
+            if (target.hp > 0) {
+              const f = Math.max(
+                0,
+                1 - Math.hypot(target.x - p.x, target.y - p.y) / 68,
+              );
+              s += f * (target.team === u.team ? -100 : 80);
+            }
+          if (s > score) {
+            score = s;
+            best = { angle, power, direction, weapon: "pod" };
+          }
+        }
+    return best;
+  }
+  save() {
+    return JSON.stringify({ version: 1, state: this });
+  }
+  static load(raw: string) {
+    const data = JSON.parse(raw);
+    const s = data.state;
+    if (
+      data.version !== 1 ||
+      !s ||
+      !Array.isArray(s.terrain?.cells) ||
+      s.terrain.cells.length !== 129600 ||
+      s.terrain.cells.some((v: unknown) => v !== 0 && v !== 1) ||
+      !Array.isArray(s.units) ||
+      s.units.length !== 6 ||
+      s.units.some(
+        (u: Creature) =>
+          !u ||
+          ![u.x, u.y, u.hp, u.vx, u.vy, u.bombs].every(Number.isFinite) ||
+          Math.abs(u.vx) > 2000 ||
+          Math.abs(u.vy) > 2000 ||
+          Math.abs(u.x) > 2000 ||
+          Math.abs(u.y) > 2000 ||
+          typeof u.name !== "string" ||
+          u.name.length > 24 ||
+          typeof u.grounded !== "boolean",
+      ) ||
+      !["ai", "hotseat", "range"].includes(s.mode) ||
+      !["aim", "flight", "settle", "over"].includes(s.phase) ||
+      ![s.seed, s.turn, s.timer, s.wind, s.water, s.active].every(
+        Number.isFinite,
+      ) ||
+      ![0, 1].includes(s.team) ||
+      ![0, 1, 2].includes(s.map) ||
+      Math.abs(s.wind) > 22 ||
+      s.timer < -1 ||
+      s.timer > 30 ||
+      !Number.isInteger(s.seed) ||
+      s.seed < 0 ||
+      s.seed > 4294967295 ||
+      !Number.isInteger(s.active) ||
+      s.active < 0 ||
+      s.active > 5 ||
+      s.units.some(
+        (u: Creature, i: number) =>
+          u.id !== i ||
+          u.team !== (i < 3 ? 0 : 1) ||
+          u.hp < 0 ||
+          u.hp > 100 ||
+          !Number.isInteger(u.bombs) ||
+          u.bombs < 0 ||
+          u.bombs > 3,
+      ) ||
+      !["pod", "bomb", "glove"].includes(s.weapon) ||
+      !Number.isFinite(s.angle) ||
+      s.angle < 5 ||
+      s.angle > 85 ||
+      !Number.isFinite(s.power) ||
+      s.power < 10 ||
+      s.power > 100 ||
+      !Number.isInteger(s.turn) ||
+      s.turn < 1 ||
+      s.turn > 51 ||
+      s.water < 260 ||
+      s.water > 502 ||
+      !Number.isFinite(s.settle) ||
+      s.settle < 0 ||
+      s.settle > 120 ||
+      !Number.isFinite(s.aiClock) ||
+      s.aiClock < 0 ||
+      s.aiClock > 2 ||
+      !Array.isArray(s.cursors) ||
+      s.cursors.length !== 2 ||
+      s.cursors.some((v: number) => !Number.isInteger(v) || v < 0 || v > 2) ||
+      typeof s.paused !== "boolean" ||
+      (s.direction !== 1 && s.direction !== -1) ||
+      (s.phase === "flight") !== !!s.projectile ||
+      (s.projectile &&
+        (![
+          s.projectile.x,
+          s.projectile.y,
+          s.projectile.vx,
+          s.projectile.vy,
+          s.projectile.age,
+        ].every(Number.isFinite) ||
+          !["pod", "bomb"].includes(s.projectile.weapon) ||
+          Math.abs(s.projectile.vx) > 2000 ||
+          Math.abs(s.projectile.vy) > 2000 ||
+          s.projectile.age < 0 ||
+          s.projectile.age > 8))
+    )
+      throw Error("Invalid save");
+    const g = new Game(s.seed, s.map, s.mode);
+    for (const key of Object.keys(g))
+      if (key in s) (g as unknown as Record<string, unknown>)[key] = s[key];
+    g.terrain = Object.assign(new Terrain(1, 0), s.terrain);
+    return g;
+  }
 }
