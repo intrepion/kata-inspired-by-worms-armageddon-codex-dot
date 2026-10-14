@@ -111,7 +111,8 @@ export class Game {
   timer = 30;
   wind = 0;
   angle = 45;
-  power = 65;
+  power = 10;
+  charging = false;
   direction = 1;
   weapon: Weapon = "pod";
   phase: "aim" | "flight" | "settle" | "over" = "aim";
@@ -160,18 +161,23 @@ export class Game {
       this.angle = Math.max(5, Math.min(85, values.angle));
     if (values.power !== undefined)
       this.power = Math.max(10, Math.min(100, values.power));
-    if (values.weapon !== undefined) this.weapon = values.weapon;
+    if (values.weapon !== undefined && values.weapon !== this.weapon) {
+      this.cancelCharge();
+      this.weapon = values.weapon;
+    }
   }
   get human() {
     return this.mode !== "ai" || this.team === 0;
   }
   move(dir: number) {
-    if (this.paused || this.phase !== "aim" || !this.human) return;
+    if (this.charging || this.paused || this.phase !== "aim" || !this.human)
+      return;
     this.direction = dir;
     this.captain.vx = dir * 68;
   }
   jump() {
     if (
+      this.charging ||
       this.paused ||
       this.phase !== "aim" ||
       !this.human ||
@@ -181,12 +187,47 @@ export class Game {
     this.captain.vy = -145;
     this.captain.grounded = false;
   }
+  beginCharge() {
+    if (
+      this.charging ||
+      !this.human ||
+      this.paused ||
+      this.phase !== "aim" ||
+      this.captain.hp <= 0 ||
+      this.timer <= 0 ||
+      (this.weapon === "bomb" && this.captain.bombs === 0)
+    )
+      return false;
+    if (this.weapon === "glove") return this.fire();
+    this.power = 10;
+    this.charging = true;
+    this.captain.vx = 0;
+    return true;
+  }
+  releaseCharge() {
+    if (!this.charging) return false;
+    this.charging = false;
+    return this.fire();
+  }
+  setPaused(paused: boolean) {
+    if (paused) this.cancelCharge();
+    this.paused = paused;
+  }
+  cancelCharge() {
+    this.charging = false;
+  }
   fire() {
-    if (this.paused || this.phase !== "aim" || this.captain.hp <= 0)
+    if (
+      this.paused ||
+      this.phase !== "aim" ||
+      this.captain.hp <= 0 ||
+      this.timer <= 0
+    )
       return false;
     const u = this.captain;
     if (this.weapon === "bomb" && u.bombs === 0) return false;
     if (this.weapon === "bomb" && this.mode !== "range") u.bombs--;
+    this.cancelCharge();
     u.vx = 0;
     this.phase = "flight";
     if (this.weapon === "glove") {
@@ -262,6 +303,7 @@ export class Game {
     );
     if (this.mode === "range") return false;
     if (!alive[0] || !alive[1] || this.turn > 50) {
+      this.cancelCharge();
       this.phase = "over";
       this.winner = alive[0] === alive[1] ? null : alive[0] ? 0 : 1;
       this.notice =
@@ -273,6 +315,7 @@ export class Game {
     return false;
   }
   next() {
+    this.cancelCharge();
     if (this.result()) return;
     this.turn++;
     if (this.turn >= 12) this.water = Math.max(260, this.water - 8);
@@ -295,7 +338,10 @@ export class Game {
         : `${this.captain.name} is on garden duty.`;
   }
   step() {
-    if (this.paused || this.phase === "over") return;
+    if (this.paused || this.phase === "over") {
+      this.cancelCharge();
+      return;
+    }
     if (this.blastVisual) {
       this.blastVisual.life -= DT;
       if (this.blastVisual.life <= 0) this.blastVisual = null;
@@ -304,12 +350,15 @@ export class Game {
     if (this.phase === "aim") {
       if (this.result()) return;
       if (this.captain.hp <= 0) {
+        this.cancelCharge();
         this.phase = "settle";
         this.settle = 0;
         return;
       }
       this.timer -= DT;
+      if (this.charging) this.power = Math.min(100, this.power + 45 * DT);
       if (this.timer <= 0) {
+        this.cancelCharge();
         this.phase = "settle";
         this.settle = 0;
       }
@@ -375,6 +424,7 @@ export class Game {
     return best;
   }
   save() {
+    this.cancelCharge();
     return JSON.stringify({ version: 1, state: this });
   }
   static load(raw: string) {
@@ -486,6 +536,7 @@ export class Game {
     const g = new Game(s.seed, s.map, s.mode);
     for (const key of Object.keys(g))
       if (key in s) (g as unknown as Record<string, unknown>)[key] = s[key];
+    g.cancelCharge();
     g.terrain = new Terrain(1, 0);
     g.terrain.cells = s.terrain.cells;
     g.terrain.revision = s.terrain.revision;

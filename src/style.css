@@ -204,7 +204,8 @@ canvas {
 .aim output {
   float: right;
 }
-input[type="range"] {
+input[type="range"],
+meter {
   width: 100%;
   accent-color: #b45335;
   display: block;
@@ -224,6 +225,8 @@ input[type="range"] {
   font-size: 11px;
 }
 .fire {
+  touch-action: none;
+  user-select: none;
   background: #bc5737;
   color: #fffaf0;
   border-color: #bc5737;

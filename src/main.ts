@@ -1,4 +1,5 @@
 import { Game, W, H, DT, WEAPONS, type Mode, type Weapon } from "./engine";
+import { FireInput, type FireSource } from "./fire-input";
 import "./style.css";
 const $ = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
@@ -12,7 +13,7 @@ $("app").innerHTML =
     )
     .join(
       "",
-    )}</div><div class="aim"><label>Angle <output id="anglevalue"></output><input id="angle" type="range" min="5" max="85" value="45"></label><label>Power <output id="powervalue"></output><input id="power" type="range" min="10" max="100" value="65"></label></div><div class="actions"><div><button id="left" aria-label="Walk left">←</button><button id="jump">Jump ↑</button><button id="right" aria-label="Walk right">→</button></div><button class="fire" id="fire">Fire! <small>SPACE</small></button></div></div></section><section class="bottom"><div class="setup"><label>Battlefield<select id="map"><option value="0">01 / Picnic Peaks</option><option value="1">02 / The Salad Bowl</option><option value="2">03 / Moonlit Mulch</option></select></label><label>Play mode<select id="mode"><option value="ai">Solo vs Nightshade AI</option><option value="hotseat">Local two-player hotseat</option><option value="range">Firing range</option></select></label><button id="new">New match</button><button id="save">Save</button><button id="load">Load save</button></div><details open><summary>Field guide</summary><p><b>1. Move</b> with ← → or A D, jump with W / ↑. Tap screen arrows to take a step. Facing follows movement.<br><b>2. Aim</b> with the sliders ([ ] angle; + − power). Wind bends shots. Dotted marks show the first second of flight, not the landing point.<br><b>3. Fire</b> with Space. One shot per turn. Hop Bombs bounce; the glove hits a nearby patch. Explosions carve real holes and throw critters. Water is fatal. After turn 12, the tide rises.<br><b>Escape</b> pauses. Hotseat alternates crews. Range is a sandbox with unlimited bombs. Saves include terrain and an in-flight volley.</p></details></section><footer>Grown from scratch. All creatures, maps and sounds are original. <span>KEEP YOUR ROOTS. LOSE THE TURF.</span></footer></main>`;
+    )}</div><div class="aim"><label>Angle <output id="anglevalue"></output><input id="angle" type="range" min="5" max="85" value="45"></label><label>Shot power <output id="powervalue"></output><meter id="power" min="10" max="100" value="10" aria-label="Shot power"></meter></label></div><div class="actions"><div><button id="left" aria-label="Walk left">←</button><button id="jump">Jump ↑</button><button id="right" aria-label="Walk right">→</button></div><button class="fire" id="fire" aria-describedby="chargehelp">Hold to charge <small>SPACE</small></button></div></div></section><section class="bottom"><div class="setup"><label>Battlefield<select id="map"><option value="0">01 / Picnic Peaks</option><option value="1">02 / The Salad Bowl</option><option value="2">03 / Moonlit Mulch</option></select></label><label>Play mode<select id="mode"><option value="ai">Solo vs Nightshade AI</option><option value="hotseat">Local two-player hotseat</option><option value="range">Firing range</option></select></label><button id="new">New match</button><button id="save">Save</button><button id="load">Load save</button></div><details open><summary>Field guide</summary><p><b>1. Move</b> with ← → or A D, jump with W / ↑. Tap screen arrows to take a step. Facing follows movement.<br><b>2. Aim</b> with the angle slider or [ ]. Wind bends shots. Dotted marks show the first second of flight, not the landing point.<br><b id="chargehelp">3. Fire</b> by holding Space or the Fire button, then releasing. Shot power rises from 10% to 100% over two seconds and stays capped until release. Enter on the focused Fire button (or assistive activation) starts charging; activate again to fire. The Garden Glove fires immediately. One shot per turn. Hop Bombs bounce; the glove hits a nearby patch. Explosions carve real holes and throw critters. Water is fatal. After turn 12, the tide rises.<br><b>Escape</b> pauses. Pause, focus loss, hidden tabs, cancelled pointers, Save/Load and turn expiry discard a held shot; press again to charge. Hotseat alternates crews. Range is a sandbox with unlimited bombs. Saves include terrain and an in-flight volley.</p></details></section><footer>Grown from scratch. All creatures, maps and sounds are original. <span>KEEP YOUR ROOTS. LOSE THE TURF.</span></footer></main>`;
 let game = new Game(),
   muted = true,
   audio: AudioContext | null = null;
@@ -41,7 +42,7 @@ function tone() {
   o.stop(audio.currentTime + 0.3);
 }
 function restart() {
-  held.clear();
+  cancelInput();
   acc = 0;
   game = new Game(
     42,
@@ -63,12 +64,19 @@ function sync() {
     game.map
   ];
   $("anglevalue").textContent = game.angle + "°";
-  $("powervalue").textContent = game.power + "%";
+  $("powervalue").textContent = Math.round(game.power) + "%";
   $<HTMLInputElement>("angle").value = String(game.angle);
-  $<HTMLInputElement>("power").value = String(game.power);
+  $<HTMLMeterElement>("power").value = game.power;
   const allowed = game.human && game.phase === "aim" && !game.paused;
-  for (const id of ["fire", "left", "right", "jump", "angle", "power"])
+  for (const id of ["fire", "left", "right", "jump", "angle"])
     ($(id) as HTMLButtonElement).disabled = !allowed;
+  $("fire").innerHTML =
+    game.weapon === "glove"
+      ? "Fire glove <small>SPACE</small>"
+      : game.charging
+        ? "Release to fire <small>SPACE</small>"
+        : "Hold to charge <small>SPACE</small>";
+  $("fire").setAttribute("aria-pressed", String(game.charging));
   document.querySelectorAll<HTMLButtonElement>("[data-weapon]").forEach((b) => {
     b.classList.toggle("selected", b.dataset.weapon === game.weapon);
     b.disabled =
@@ -85,7 +93,7 @@ function sync() {
       ? '<div class="eyebrow">TAKE A BREATHER</div><h2>Garden intermission.</h2><p>Your volley and turn clock are safely paused.</p><button id="resume">Resume</button>'
       : `<div class="eyebrow">THAT’S A WRAP</div><h2>${game.winner === null ? "Mutually composted." : game.winner === 0 ? "Marmalade takes the patch!" : "Nightshade takes the patch!"}</h2><p>${game.notice}</p><button id="rematch">Rematch</button>`;
     document.getElementById("resume")?.addEventListener("click", () => {
-      game.paused = false;
+      game.setPaused(false);
       sync();
     });
     document.getElementById("rematch")?.addEventListener("click", restart);
@@ -223,7 +231,8 @@ function draw() {
 }
 $("new").onclick = restart;
 $("pause").onclick = () => {
-  game.paused = !game.paused;
+  cancelInput();
+  game.setPaused(!game.paused);
   sync();
 };
 $("sound").onclick = () => {
@@ -232,8 +241,54 @@ $("sound").onclick = () => {
   $("sound").setAttribute("aria-pressed", String(!muted));
   tone();
 };
-$("fire").onclick = () => {
-  if (game.fire()) tone();
+const fireInput = new FireInput(() => game);
+const fireButton = $("fire");
+let firePointer: number | null = null;
+function cancelInput() {
+  held.clear();
+  fireInput.cancel();
+  const pointer = firePointer;
+  firePointer = null;
+  if (pointer !== null && fireButton.hasPointerCapture(pointer))
+    fireButton.releasePointerCapture(pointer);
+}
+function pressFire(source: FireSource) {
+  const accepted = fireInput.press(source);
+  if (accepted && !game.charging) tone();
+  sync();
+  return accepted;
+}
+fireButton.addEventListener("pointerdown", (e) => {
+  if (e.button !== 0 || firePointer !== null) return;
+  e.preventDefault();
+  if (pressFire("pointer") && game.charging) {
+    firePointer = e.pointerId;
+    fireButton.setPointerCapture(e.pointerId);
+  }
+});
+addEventListener("pointerup", (e) => {
+  if (e.pointerId !== firePointer) return;
+  const pointer = firePointer;
+  firePointer = null;
+  if (fireInput.release("pointer")) tone();
+  if (fireButton.hasPointerCapture(pointer))
+    fireButton.releasePointerCapture(pointer);
+  sync();
+});
+addEventListener("pointercancel", (e) => {
+  if (e.pointerId !== firePointer) return;
+  cancelInput();
+  sync();
+});
+fireButton.addEventListener("lostpointercapture", (e) => {
+  if (e.pointerId !== firePointer) return;
+  cancelInput();
+  sync();
+});
+fireButton.onclick = (e) => {
+  // Pointer clicks already fired on release. Enter/assistive activation toggles a hold.
+  if (e.detail !== 0) return;
+  if (fireInput.activate() && !game.charging) tone();
   sync();
 };
 $("jump").onclick = () => game.jump();
@@ -244,7 +299,7 @@ for (const [id, dir] of [
   $(id).onclick = () => {
     game.move(dir);
   };
-for (const id of ["angle", "power"] as const)
+for (const id of ["angle"] as const)
   $(id).oninput = () => {
     game.configure({ [id]: Number($<HTMLInputElement>(id).value) });
     sync();
@@ -257,6 +312,7 @@ document.querySelectorAll<HTMLButtonElement>("[data-weapon]").forEach(
     }),
 );
 $("save").onclick = () => {
+  cancelInput();
   try {
     localStorage.setItem("burrow-brigade-v1", game.save());
     game.notice = "Garden bottled. Save ready.";
@@ -266,9 +322,9 @@ $("save").onclick = () => {
   sync();
 };
 $("load").onclick = () => {
+  cancelInput();
   try {
     const loaded = Game.load(localStorage.getItem("burrow-brigade-v1") ?? "");
-    held.clear();
     acc = 0;
     game = loaded;
     $<HTMLSelectElement>("map").value = String(game.map);
@@ -281,38 +337,61 @@ $("load").onclick = () => {
 };
 const held = new Set<string>();
 addEventListener("keydown", (e) => {
-  if ((e.target as HTMLElement).matches("input,select,button")) return;
+  const target = e.target as HTMLElement;
   if (
-    ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", " ", "Escape"].includes(
+    e.key === " " &&
+    !target.matches("input,select,textarea,button:not(#fire)")
+  ) {
+    e.preventDefault();
+    if (!e.repeat) pressFire("space");
+    return;
+  }
+  if (e.key === "Enter" && target === fireButton) {
+    e.preventDefault();
+    if (!e.repeat && fireInput.activate() && !game.charging) tone();
+    sync();
+    return;
+  }
+  if (target.matches("input,select,textarea,button") && e.key !== "Escape")
+    return;
+  if (
+    ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Escape"].includes(
       e.key,
     )
   )
     e.preventDefault();
-  if (e.repeat && [" ", "Escape", "w", "ArrowUp"].includes(e.key)) return;
+  if (e.repeat && ["Escape", "w", "ArrowUp"].includes(e.key)) return;
   held.add(e.key);
   if (e.key === "Escape") {
-    game.paused = !game.paused;
+    cancelInput();
+    game.setPaused(!game.paused);
     sync();
   }
   if (!game.human) return;
-  if (e.key === " ") {
-    if (game.fire()) tone();
-  }
   if (e.key === "w" || e.key === "ArrowUp") game.jump();
   if (e.key === "[") game.configure({ angle: game.angle - 2 });
   if (e.key === "]") game.configure({ angle: game.angle + 2 });
-  if (e.key === "+" || e.key === "=") game.configure({ power: game.power + 5 });
-  if (e.key === "-") game.configure({ power: game.power - 5 });
   if (["1", "2", "3"].includes(e.key))
     game.configure({
       weapon: (["pod", "bomb", "glove"] as Weapon[])[Number(e.key) - 1],
     });
 });
-addEventListener("keyup", (e) => held.delete(e.key));
-addEventListener("blur", () => {
-  held.clear();
-  game.paused = true;
+addEventListener("keyup", (e) => {
+  held.delete(e.key);
+  if (e.key === " ") {
+    e.preventDefault();
+    if (fireInput.release("space")) tone();
+    sync();
+  }
+});
+function suspendInput() {
+  cancelInput();
+  game.setPaused(true);
   sync();
+}
+addEventListener("blur", suspendInput);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) suspendInput();
 });
 let last = performance.now(),
   acc = 0,
