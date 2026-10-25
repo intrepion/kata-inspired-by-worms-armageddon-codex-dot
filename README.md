@@ -25,3 +25,7 @@ npm audit --audit-level=moderate
 ```
 
 See docs/SPEC.md, docs/DECISIONS.md, docs/REVIEWS.md and docs/QA.md for decisions, tests and actual browser evidence.
+
+## Play online
+
+[Play the hosted game](https://intrepion.github.io/kata-inspired-by-worms-armageddon-codex-dot/)
