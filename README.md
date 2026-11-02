@@ -29,3 +29,7 @@ See docs/SPEC.md, docs/DECISIONS.md, docs/REVIEWS.md and docs/QA.md for decision
 ## Play online
 
 [Play the hosted game](https://intrepion.github.io/kata-inspired-by-worms-armageddon-codex-dot/)
+
+## Arcade metadata
+
+See [docs/arcade-metadata.md](docs/arcade-metadata.md) for the game-owned manifest and screenshot provenance.

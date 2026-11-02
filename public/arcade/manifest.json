@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "gameId": "kata-inspired-by-worms-armageddon-codex-dot",
+  "playUrl": "https://intrepion.github.io/kata-inspired-by-worms-armageddon-codex-dot/",
+  "screenshots": [
+    {
+      "path": "arcade/screenshots/view-01.jpg",
+      "sha256": "13e622fc0ecf2eb13aa6f118f1feb3860fc52c06ad9c90f003382ac22f0c713c",
+      "alt": "Gameplay capture 1",
+      "provenance": {
+        "kind": "existing_repository_capture",
+        "sourcePath": "docs/qa/final-desktop.jpg",
+        "deployedBuild": null,
+        "captureDate": null
+      }
+    }
+  ]
+}
