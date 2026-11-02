@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "gameId": "kata-inspired-by-worms-armageddon-codex-dot",
   "playUrl": "https://intrepion.github.io/kata-inspired-by-worms-armageddon-codex-dot/",
   "screenshots": [
@@ -12,6 +12,46 @@
         "sourcePath": "docs/qa/final-desktop.jpg",
         "deployedBuild": null,
         "captureDate": null
+      }
+    },
+    {
+      "path": "arcade/screenshots/ci-20261102-01.jpg",
+      "sha256": "65edf65b33d3677629261fc7559186c01525420131a3b3c96280daad3040fbe6",
+      "alt": "Burrow Brigade gameplay, view 1",
+      "provenance": {
+        "kind": "ci_gameplay_capture",
+        "sourcePath": "arcade/capture-evidence/ci-20261102-01.png",
+        "sourceSha256": "2cda4d133b7f23b2427f6ad58e1d2e55f591344e376593ff806378d4ebc3fe8e",
+        "captureCommit": "3195513ff17dc7a37ece5299dd6c6fc92d156efe",
+        "workflowRunId": "41438439623",
+        "inputHashes": {
+          "index.html": "8dd500ea8389905046dc395d549550aa8e44eee7d11eefb9857f6e43dd1bc4e7",
+          "assets/index-CMxN55GD.css": "3934d4a1728a4f252fd919d09ddf1982c9e796b66ea272366dc7358d95ccd973",
+          "assets/index-DheG5z5T.js": "3f82dde7bca4fc79948f64047eb8a56147f900d0d975057b7beea04af5c68367"
+        },
+        "publishedFilesVerifiedAt": "2026-11-02T19:01:20Z",
+        "captureRecordPath": "arcade/capture-evidence/ci-20261102-record.json",
+        "captureRecordSha256": "96ef38011f757c81ffd5baca9d93659ec1d0d488056a62337c007ee22b769b34"
+      }
+    },
+    {
+      "path": "arcade/screenshots/ci-20261102-02.jpg",
+      "sha256": "83fa5962405e2548fd57c3cee7288589297d0a02552b253e86e09eedf8e74513",
+      "alt": "Burrow Brigade gameplay, view 2",
+      "provenance": {
+        "kind": "ci_gameplay_capture",
+        "sourcePath": "arcade/capture-evidence/ci-20261102-02.png",
+        "sourceSha256": "368f6ee9c0876d2ec27a41a7ce1b8a12b632b7a4b5ea6766f5c2de9644e2f324",
+        "captureCommit": "3195513ff17dc7a37ece5299dd6c6fc92d156efe",
+        "workflowRunId": "41438439623",
+        "inputHashes": {
+          "index.html": "8dd500ea8389905046dc395d549550aa8e44eee7d11eefb9857f6e43dd1bc4e7",
+          "assets/index-CMxN55GD.css": "3934d4a1728a4f252fd919d09ddf1982c9e796b66ea272366dc7358d95ccd973",
+          "assets/index-DheG5z5T.js": "3f82dde7bca4fc79948f64047eb8a56147f900d0d975057b7beea04af5c68367"
+        },
+        "publishedFilesVerifiedAt": "2026-11-02T19:01:20Z",
+        "captureRecordPath": "arcade/capture-evidence/ci-20261102-record.json",
+        "captureRecordSha256": "96ef38011f757c81ffd5baca9d93659ec1d0d488056a62337c007ee22b769b34"
       }
     }
   ]
