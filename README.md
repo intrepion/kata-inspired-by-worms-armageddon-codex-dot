@@ -1,5 +1,7 @@
 # Burrow Brigade
 
+[Kata Arcade](https://intrepion.github.io/)
+
 An original backyard artillery game: small critters, big crater energy. Private skirmish prototype built with TypeScript and Canvas. All art, terrain, names and sound are original.
 
 ## Play locally
