@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "workflowCommit": "85a5aca2487b21ead94e5479fbca09a6b62c4ba5",
+  "sourceCommit": "85a5aca2487b21ead94e5479fbca09a6b62c4ba5",
+  "runId": "41675181871",
+  "url": "http://127.0.0.1:4280/",
+  "inputs": {
+    "index.html": "c359682d6324afafadc3fd9304329dd430f0f2a2b20c3e0b467687484b088150",
+    "assets/index-CMxN55GD.css": "3934d4a1728a4f252fd919d09ddf1982c9e796b66ea272366dc7358d95ccd973",
+    "assets/index-BGflD49Y.js": "d7c493d98d145148a5324456f7706450cd5e62dde8062247e22f823be31bcdcf"
+  },
+  "browser": "153.0.8010.12",
+  "viewport": {
+    "width": 1280,
+    "height": 1000
+  },
+  "screenshots": [
+    "blink-01.png",
+    "burrow-01.png",
+    "burrow-02.png"
+  ]
+}
