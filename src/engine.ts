@@ -1,7 +1,7 @@
 export const W = 960,
   H = 540,
   DT = 1 / 60;
-export type Weapon = "pod" | "bomb" | "glove";
+export type Weapon = "pod" | "bomb" | "glove" | "teleport";
 export type Mode = "ai" | "hotseat" | "range";
 export class Terrain {
   cells: number[];
@@ -70,9 +70,16 @@ export interface Projectile {
 export const WEAPONS = {
   pod: { label: "Seed Pod", radius: 48, damage: 58 },
   bomb: { label: "Hop Bomb", radius: 65, damage: 72 },
+  teleport: { label: "Burrow Blink", radius: 0, damage: 0 },
   glove: { label: "Garden Glove", radius: 37, damage: 45 },
 };
-export function projectileStep(p: Projectile, t: Terrain, wind: number) {
+export function projectileStep(
+  p: Projectile,
+  t: Terrain,
+  wind: number,
+  units: Creature[] = [],
+  shooterId = -1,
+) {
   p.age += DT;
   p.vx += wind * DT;
   p.vy += 210 * DT;
@@ -80,6 +87,22 @@ export function projectileStep(p: Projectile, t: Terrain, wind: number) {
   for (let i = 0; i < count; i++) {
     const nx = p.x + (p.vx * DT) / count,
       ny = p.y + (p.vy * DT) / count;
+    // Impact pods detonate on a creature as well as on terrain. Substeps keep
+    // fast shots from tunneling through a target. Ignore the launcher's body
+    // briefly, then allow a returning shot to hit its owner.
+    if (
+      p.weapon === "pod" &&
+      units.some(
+        (u) =>
+          u.hp > 0 &&
+          !(u.id === shooterId && p.age < 0.15) &&
+          Math.hypot(nx - u.x, ny - u.y) <= 12,
+      )
+    ) {
+      p.x = nx;
+      p.y = ny;
+      return true;
+    }
     if (t.solid(nx, ny)) {
       if (p.weapon === "bomb") {
         const wall = t.solid(nx, p.y);
@@ -115,6 +138,8 @@ export class Game {
   charging = false;
   direction = 1;
   weapon: Weapon = "pod";
+  teleports = [1, 1];
+  destinationX = 480;
   phase: "aim" | "flight" | "settle" | "over" = "aim";
   paused = false;
   projectile: Projectile | null = null;
@@ -198,7 +223,8 @@ export class Game {
       (this.weapon === "bomb" && this.captain.bombs === 0)
     )
       return false;
-    if (this.weapon === "glove") return this.fire();
+    if (this.weapon === "glove" || this.weapon === "teleport")
+      return this.fire();
     this.power = 10;
     this.charging = true;
     this.captain.vx = 0;
@@ -216,6 +242,46 @@ export class Game {
   cancelCharge() {
     this.charging = false;
   }
+  teleportLanding(x: number): { x: number; y: number } | null {
+    if (!Number.isFinite(x) || x < 12 || x > W - 12) return null;
+    const y = this.terrain.surface(x) - 10;
+    if (
+      y < 12 ||
+      y + 10 >= this.water ||
+      this.units.some(
+        (u) =>
+          u.hp > 0 && u.id !== this.active && Math.hypot(u.x - x, u.y - y) < 24,
+      )
+    )
+      return null;
+    for (const dx of [-8, 0, 8])
+      for (const dy of [-9, 0, 7])
+        if (this.terrain.solid(x + dx, y + dy)) return null;
+    return { x, y };
+  }
+  teleport(x: number) {
+    if (
+      this.paused ||
+      this.phase !== "aim" ||
+      this.weapon !== "teleport" ||
+      this.timer <= 0 ||
+      this.captain.hp <= 0 ||
+      (this.mode !== "range" && this.teleports[this.team] <= 0)
+    )
+      return false;
+    const point = this.teleportLanding(x);
+    if (!point) {
+      this.notice = "Choose clear, unoccupied ground above the water.";
+      return false;
+    }
+    this.cancelCharge();
+    if (this.mode !== "range") this.teleports[this.team]--;
+    Object.assign(this.captain, point, { vx: 0, vy: 0, grounded: true });
+    this.phase = "settle";
+    this.settle = 0;
+    this.notice = "Burrow Blink: relocated. Turn spent.";
+    return true;
+  }
   fire() {
     if (
       this.paused ||
@@ -224,6 +290,7 @@ export class Game {
       this.timer <= 0
     )
       return false;
+    if (this.weapon === "teleport") return this.teleport(this.destinationX);
     const u = this.captain;
     if (this.weapon === "bomb" && u.bombs === 0) return false;
     if (this.weapon === "bomb" && this.mode !== "range") u.bombs--;
@@ -372,7 +439,7 @@ export class Game {
       }
     } else if (this.phase === "flight" && this.projectile) {
       const p = this.projectile;
-      if (projectileStep(p, this.terrain, this.wind))
+      if (projectileStep(p, this.terrain, this.wind, this.units, this.active))
         this.explode(p.x, p.y, p.weapon);
     } else if (this.phase === "settle") {
       this.settle += DT;
@@ -406,7 +473,8 @@ export class Game {
               weapon: "pod",
             };
           for (let i = 0; i < 421; i++)
-            if (projectileStep(p, this.terrain, this.wind)) break;
+            if (projectileStep(p, this.terrain, this.wind, this.units, u.id))
+              break;
           let s = 0;
           for (const target of this.units)
             if (target.hp > 0) {
@@ -494,7 +562,18 @@ export class Game {
           u.bombs < 0 ||
           u.bombs > 3,
       ) ||
-      !["pod", "bomb", "glove"].includes(s.weapon) ||
+      !["pod", "bomb", "glove", "teleport"].includes(s.weapon) ||
+      (s.teleports !== undefined &&
+        (!Array.isArray(s.teleports) ||
+          s.teleports.length !== 2 ||
+          s.teleports.some(
+            (n: unknown) =>
+              !Number.isInteger(n) || Number(n) < 0 || Number(n) > 1,
+          ))) ||
+      (s.destinationX !== undefined &&
+        (!Number.isFinite(s.destinationX) ||
+          s.destinationX < 12 ||
+          s.destinationX > W - 12)) ||
       !Number.isFinite(s.angle) ||
       s.angle < 5 ||
       s.angle > 85 ||

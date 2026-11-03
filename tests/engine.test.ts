@@ -208,3 +208,26 @@ test("save terrain metadata cannot override collision methods", () => {
   d.state.blastVisual = { x: 0, y: 0, r: -1, life: 1 };
   assert.throws(() => Game.load(JSON.stringify(d)));
 });
+
+test("impact pods hit creatures without tunneling and can return to the shooter", () => {
+  const g = new Game();
+  const target = g.units[3]; target.x = 500; target.y = 100;
+  const p = shot(); Object.assign(p, { x: 460, y: 100, vx: 2400, vy: 0, age: 1 });
+  assert.equal(projectileStep(p, g.terrain, 0, g.units, 0), true);
+  assert.ok(p.x < target.x && p.x >= target.x - 13);
+  const owner = g.units[0]; owner.x = 500; owner.y = 100;
+  const fresh = shot(); Object.assign(fresh, { x: 487, y: 100, vx: 300, vy: 0, age: 0 });
+  assert.equal(projectileStep(fresh, g.terrain, 0, [owner], owner.id), false);
+  const returning = shot(); Object.assign(returning, { x: 487, y: 100, vx: 300, vy: 0, age: 1 });
+  assert.equal(projectileStep(returning, g.terrain, 0, [owner], owner.id), true);
+});
+test("a pod hitting a creature explodes and damages it in the live game", () => {
+  const g = new Game(42, 0, "hotseat");
+  const target = g.units[3]; target.x = 500; target.y = 100;
+  g.phase = "flight";
+  g.projectile = {x: 480, y: 100, vx: 900, vy: 0, age: 1, weapon: "pod"};
+  g.step();
+  assert.equal(g.phase, "settle");
+  assert.equal(g.projectile, null);
+  assert.ok(target.hp < 100);
+});

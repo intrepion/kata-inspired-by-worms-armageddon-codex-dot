@@ -9,11 +9,11 @@ $("app").innerHTML =
   )
     .map(
       ([key, w], i) =>
-        `<button data-weapon="${key}"><b>${["✦", "●", "☞"][i]} ${w.label}</b><small>${["Impact · unlimited", "Bounce · 2.4s fuse", "Close range · unlimited"][i]}</small></button>`,
+        `<button data-weapon="${key}"><b>${({ pod: "✦", bomb: "●", glove: "☞", teleport: "◎" } as Record<string, string>)[key]} ${w.label}</b><small>${({ pod: "Impact · unlimited", bomb: "Bounce · 2.4s fuse", glove: "Close range · unlimited", teleport: "Relocate · 1 per crew" } as Record<string, string>)[key]}</small></button>`,
     )
     .join(
       "",
-    )}</div><div class="aim"><label>Angle <output id="anglevalue"></output><input id="angle" type="range" min="5" max="85" value="45"></label><label>Shot power <output id="powervalue"></output><meter id="power" min="10" max="100" value="10" aria-label="Shot power"></meter></label></div><div class="actions"><div><button id="left" aria-label="Walk left">←</button><button id="jump">Jump ↑</button><button id="right" aria-label="Walk right">→</button></div><button class="fire" id="fire" aria-describedby="chargehelp">Hold to charge <small>SPACE</small></button></div></div></section><section class="bottom"><div class="setup"><label>Battlefield<select id="map"><option value="0">01 / Picnic Peaks</option><option value="1">02 / The Salad Bowl</option><option value="2">03 / Moonlit Mulch</option></select></label><label>Play mode<select id="mode"><option value="ai">Solo vs Nightshade AI</option><option value="hotseat">Local two-player hotseat</option><option value="range">Firing range</option></select></label><button id="new">New match</button><button id="save">Save</button><button id="load">Load save</button></div><details open><summary>Field guide</summary><p><b>1. Move</b> with ← → or A D, jump with W / ↑. Tap screen arrows to take a step. Facing follows movement.<br><b>2. Aim</b> with the angle slider or [ ]. Wind bends shots. Dotted marks show the first second of flight, not the landing point.<br><b id="chargehelp">3. Fire</b> by holding Space or the Fire button, then releasing. Shot power rises from 10% to 100% over two seconds and stays capped until release. Enter on the focused Fire button (or assistive activation) starts charging; activate again to fire. The Garden Glove fires immediately. One shot per turn. Hop Bombs bounce; the glove hits a nearby patch. Explosions carve real holes and throw critters. Water is fatal. After turn 12, the tide rises.<br><b>Escape</b> pauses. Pause, focus loss, hidden tabs, cancelled pointers, Save/Load and turn expiry discard a held shot; press again to charge. Hotseat alternates crews. Range is a sandbox with unlimited bombs. Saves include terrain and an in-flight volley.</p></details></section><footer>Grown from scratch. All creatures, maps and sounds are original. <span>KEEP YOUR ROOTS. LOSE THE TURF.</span></footer></main>`;
+    )}</div><div id="blink-controls" hidden><label>Landing column <input id="blink-x" type="range" min="12" max="948" value="480"></label><span>Click the battlefield to blink, or choose a column and press Fire.</span></div><div class="aim"><label>Angle <output id="anglevalue"></output><input id="angle" type="range" min="5" max="85" value="45"></label><label>Shot power <output id="powervalue"></output><meter id="power" min="10" max="100" value="10" aria-label="Shot power"></meter></label></div><div class="actions"><div><button id="left" aria-label="Walk left">←</button><button id="jump">Jump ↑</button><button id="right" aria-label="Walk right">→</button></div><button class="fire" id="fire" aria-describedby="chargehelp">Hold to charge <small>SPACE</small></button></div></div></section><section class="bottom"><div class="setup"><label>Battlefield<select id="map"><option value="0">01 / Picnic Peaks</option><option value="1">02 / The Salad Bowl</option><option value="2">03 / Moonlit Mulch</option></select></label><label>Play mode<select id="mode"><option value="ai">Solo vs Nightshade AI</option><option value="hotseat">Local two-player hotseat</option><option value="range">Firing range</option></select></label><button id="new">New match</button><button id="save">Save</button><button id="load">Load save</button></div><details open><summary>Field guide</summary><p><b>1. Move</b> with ← → or A D, jump with W / ↑. Tap screen arrows to take a step. Facing follows movement.<br><b>2. Aim</b> with the angle slider or [ ]. Wind bends shots. Dotted marks show the first second of flight, not the landing point.<br><b id="chargehelp">3. Fire</b> by holding Space or the Fire button, then releasing. Shot power rises from 10% to 100% over two seconds and stays capped until release. Enter on the focused Fire button (or assistive activation) starts charging; activate again to fire. The Garden Glove fires immediately. Burrow Blink relocates to the chosen surface column and spends the turn: click the battlefield, or set Landing column then Fire. One blink per crew; range mode is unlimited. Occupied, blocked and flooded landings are rejected. One shot per turn. Hop Bombs bounce; the glove hits a nearby patch. Explosions carve real holes and throw critters. Water is fatal. After turn 12, the tide rises.<br><b>Escape</b> pauses. Pause, focus loss, hidden tabs, cancelled pointers, Save/Load and turn expiry discard a held shot; press again to charge. Hotseat alternates crews. Range is a sandbox with unlimited bombs. Saves include terrain and an in-flight volley.</p></details></section><footer>Grown from scratch. All creatures, maps and sounds are original. <span>KEEP YOUR ROOTS. LOSE THE TURF.</span></footer></main>`;
 let game = new Game(),
   muted = true,
   audio: AudioContext | null = null;
@@ -70,17 +70,29 @@ function sync() {
   const allowed = game.human && game.phase === "aim" && !game.paused;
   for (const id of ["fire", "left", "right", "jump", "angle"])
     ($(id) as HTMLButtonElement).disabled = !allowed;
+  $("blink-controls").hidden = game.weapon !== "teleport";
+  $<HTMLInputElement>("blink-x").value = String(game.destinationX);
+  $<HTMLInputElement>("blink-x").disabled = !allowed;
   $("fire").innerHTML =
-    game.weapon === "glove"
-      ? "Fire glove <small>SPACE</small>"
-      : game.charging
-        ? "Release to fire <small>SPACE</small>"
-        : "Hold to charge <small>SPACE</small>";
+    game.weapon === "teleport"
+      ? "Blink to column <small>SPACE</small>"
+      : game.weapon === "glove"
+        ? "Fire glove <small>SPACE</small>"
+        : game.charging
+          ? "Release to fire <small>SPACE</small>"
+          : "Hold to charge <small>SPACE</small>";
   $("fire").setAttribute("aria-pressed", String(game.charging));
   document.querySelectorAll<HTMLButtonElement>("[data-weapon]").forEach((b) => {
     b.classList.toggle("selected", b.dataset.weapon === game.weapon);
     b.disabled =
-      !allowed || (b.dataset.weapon === "bomb" && game.captain.bombs === 0);
+      !allowed ||
+      (b.dataset.weapon === "bomb" && game.captain.bombs === 0) ||
+      (b.dataset.weapon === "teleport" &&
+        game.mode !== "range" &&
+        game.teleports[game.team] === 0);
+    if (b.dataset.weapon === "teleport")
+      b.querySelector("small")!.textContent =
+        `Relocate · ${game.mode === "range" ? "∞" : game.teleports[game.team]} per crew`;
     if (b.dataset.weapon === "bomb")
       b.querySelector("small")!.textContent =
         `Bounce · ${game.mode === "range" ? "∞" : game.captain.bombs} left · 2.4s`;
@@ -198,6 +210,12 @@ function draw() {
       ctx.beginPath();
       ctx.arc(u.x + game.direction * 39, u.y - 2, 37, 0, 7);
       ctx.stroke();
+    } else if (game.weapon === "teleport") {
+      const point = game.teleportLanding(game.destinationX);
+      ctx.strokeStyle = point ? "#b7f3c2" : "#f18989";
+      ctx.beginPath();
+      ctx.arc(game.destinationX, point?.y ?? game.water, 14, 0, Math.PI * 2);
+      ctx.stroke();
     } else
       for (let i = 1; i <= 12; i++) {
         const t = i * 0.07,
@@ -291,6 +309,18 @@ fireButton.onclick = (e) => {
   if (fireInput.activate() && !game.charging) tone();
   sync();
 };
+$("blink-x").oninput = () => {
+  if (game.human && game.phase === "aim" && !game.paused)
+    game.destinationX = Number($<HTMLInputElement>("blink-x").value);
+};
+canvas.addEventListener("click", (e) => {
+  if (game.weapon !== "teleport" || !game.human) return;
+  const rect = canvas.getBoundingClientRect(),
+    x = ((e.clientX - rect.left) * W) / rect.width;
+  game.destinationX = Math.max(12, Math.min(W - 12, x));
+  game.teleport(game.destinationX);
+  sync();
+});
 $("jump").onclick = () => game.jump();
 for (const [id, dir] of [
   ["left", -1],
